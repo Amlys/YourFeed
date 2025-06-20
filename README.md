@@ -35,7 +35,7 @@
 
 ---
 
-## 🚀 Installation Rapide
+## 🚀 Installation Rapide SEULEMENT SI config Firebase et API configurées.
 
 > **⏱️ Temps estimé : 10-15 minutes**
 
@@ -47,12 +47,10 @@ cd yourfeed
 # 2. Installer les dépendances
 npm install
 
-# 3. Configurer l'environnement (voir sections suivantes)
-# - Configuration Firebase
-# - Configuration YouTube API
-
-# 4. Lancer l'application
+# 3. Lancer l'application
 npm run dev
+
+# ⚙️ Si installation complète : [🔧 Installation Détaillée](#-installation-détaillée)
 ```
 
 🎉 **L'application sera disponible sur** : http://localhost:5173/
