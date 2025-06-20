@@ -1,0 +1,87 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    
+    // 🔐 RÈGLES DE SÉCURITÉ POUR YOURFEED YOUTUBE APPLICATION
+    // Seuls les utilisateurs authentifiés peuvent accéder à leurs propres données
+    
+    // Collection principale des utilisateurs
+    // Structure: /users/{userId} { categories: [], favorites: [] }
+    match /users/{userId} {
+      // ✅ Accès autorisé uniquement à l'utilisateur authentifié propriétaire
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // ✅ Validation des données lors de la création
+      allow create: if request.auth != null 
+        && request.auth.uid == userId
+        && validateUserData(request.resource.data);
+      
+      // ✅ Validation des données lors de la mise à jour
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && validateUserData(request.resource.data);
+    }
+    
+    // Collection des vidéos par utilisateur
+    // Structure: /videos/{userId}/userVideos/{videoId}
+    match /videos/{userId}/userVideos/{videoId} {
+      // ✅ Accès autorisé uniquement à l'utilisateur authentifié propriétaire
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+      
+      // ✅ Validation stricte des données vidéo lors de la création
+      allow create: if request.auth != null 
+        && request.auth.uid == userId
+        && validateVideoData(request.resource.data);
+      
+      // ✅ Validation stricte des données vidéo lors de la mise à jour
+      allow update: if request.auth != null 
+        && request.auth.uid == userId
+        && validateVideoData(request.resource.data);
+    }
+    
+    // 🚫 BLOCAGE TOTAL - Toute autre collection ou document est interdit
+    match /{document=**} {
+      allow read, write: if false;
+    }
+    
+    // 🔍 FONCTIONS DE VALIDATION DES DONNÉES
+    
+    // Validation des données utilisateur (catégories et favoris)
+    function validateUserData(data) {
+      return data.keys().hasAny(['categories', 'favorites'])
+        && (!data.keys().hasAll(['categories']) || data.categories is list)
+        && (!data.keys().hasAll(['favorites']) || data.favorites is list)
+        && data.size() <= 10; // Limite le nombre de champs autorisés
+    }
+    
+    // Validation stricte des données vidéo
+    function validateVideoData(data) {
+      return data.keys().hasAll(['id', 'title', 'channelId', 'publishedAt', 'is_deleted'])
+        && data.id is string && data.id.size() > 0 && data.id.size() <= 50
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 500
+        && data.channelId is string && data.channelId.size() > 0 && data.channelId.size() <= 50
+        && data.publishedAt is string && data.publishedAt.size() > 0
+        && data.is_deleted is bool
+        && data.size() <= 20; // Limite le nombre total de champs
+    }
+    
+    // Validation des catégories (optionnel pour validation future)
+    function validateCategoryData(data) {
+      return data.keys().hasAll(['id', 'name', 'isDefault', 'createdAt'])
+        && data.id is string && data.id.size() > 0
+        && data.name is string && data.name.size() > 0 && data.name.size() <= 100
+        && data.isDefault is bool
+        && data.createdAt is string && data.createdAt.size() > 0
+        && data.size() <= 15;
+    }
+    
+    // Validation des chaînes favorites (optionnel pour validation future)
+    function validateChannelData(data) {
+      return data.keys().hasAll(['id', 'title'])
+        && data.id is string && data.id.size() > 0
+        && data.title is string && data.title.size() > 0 && data.title.size() <= 200
+        && data.size() <= 15;
+    }
+  }
+} 
