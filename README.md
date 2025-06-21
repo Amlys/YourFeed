@@ -151,7 +151,7 @@ npm install
 
 1. **Aller sur** [Firebase Console](https://console.firebase.google.com/)
 2. **Créer un nouveau projet** :
-   - Nom du projet : `yourfeed-app` (ou votre choix)
+   - Nom du projet : `yourfeedytapp` (ou votre choix)
    - Activer Google Analytics (optionnel)
 3. **Ajouter une application Web** :
    - Nom de l'app : "YourFeed Web"

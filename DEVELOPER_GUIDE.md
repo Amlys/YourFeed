@@ -1217,8 +1217,7 @@ Renommage complet de l'application de "YourFav" vers "YourFeed" pour un nom plus
 "name": "yourfeed-youtube-app" (updated in 2 locations)
 
 // .firebaserc
-"default": "yourfeed-app" (was: yourfeedytapp)
-
+"default": "yourfeedytapp" 
 // index.html
 <title>YourFeed YouTube Application</title>
 ```
@@ -1281,7 +1280,7 @@ expect(screen.getByText(/YourFeed/)).toBeInTheDocument(); (2 occurrences)
 
 #### **✅ Cohérence Technique**
 - Nom du package NPM aligné : `yourfeed-youtube-app`
-- Projet Firebase renommé : `yourfeed-app`
+- Projet Firebase renommé : `yourfeedytapp`
 - URLs et identifiants cohérents
 
 ### 🔄 **Migration Complète**

@@ -83,7 +83,7 @@ firebase projects:list
 ### **❌ Projet Firebase incorrect**
 ```bash
 # Changer de projet
-firebase use yourfeed-app
+firebase use yourfeedytapp
 
 # Voir les projets disponibles
 firebase projects:list
