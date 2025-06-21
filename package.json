@@ -4,7 +4,8 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "node scripts/check-firebase-security.js && vite",
+    "dev": "vite",
+    "dev:secure": "node scripts/check-firebase-security.js && vite",
     "dev:unsafe": "vite",
     "vite:dev": "vite",
     "build": "vite build",

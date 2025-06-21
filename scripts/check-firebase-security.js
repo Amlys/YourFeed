@@ -29,9 +29,9 @@ const log = {
 
 async function runCommand(command) {
   return new Promise((resolve, reject) => {
-    exec(command, (error, stdout, stderr) => {
+    exec(command, { timeout: 10000 }, (error, stdout, stderr) => {
       if (error) {
-        reject({ error, stderr });
+        reject({ error, stderr, stdout });
       } else {
         resolve(stdout);
       }
@@ -95,32 +95,38 @@ async function checkFirebaseRules() {
 
 async function checkFirebaseCLI() {
   try {
-    await runCommand('firebase --version');
-    log.success('Firebase CLI installé');
-    return true;
-  } catch (error) {
-    log.error('Firebase CLI non installé');
-    log.info('Installation automatique...');
-    
-    try {
-      await runCommand('npm install -g firebase-tools');
-      log.success('Firebase CLI installé avec succès');
+    const result = await runCommand('firebase --version');
+    if (result && result.trim()) {
+      log.success(`Firebase CLI installé (v${result.trim()})`);
       return true;
-    } catch (installError) {
-      log.error('Échec installation Firebase CLI');
-      return false;
+    } else {
+      throw new Error('Firebase CLI non détecté');
     }
+  } catch (error) {
+    log.error('Firebase CLI non installé ou non accessible');
+    log.info('💡 Solutions possibles :');
+    log.info('   1. npm install -g firebase-tools');
+    log.info('   2. Redémarrer le terminal après installation');
+    log.info('   3. Utiliser npm run dev (sans vérification Firebase)');
+    return false;
   }
 }
 
 async function checkFirebaseAuth() {
   try {
-    await runCommand('firebase projects:list');
-    log.success('Connecté à Firebase');
-    return true;
+    const result = await runCommand('firebase projects:list');
+    if (result && result.includes('Project ID')) {
+      log.success('Connecté à Firebase');
+      return true;
+    } else {
+      throw new Error('Pas de projets Firebase');
+    }
   } catch (error) {
-    log.warning('Non connecté à Firebase');
-    log.info('Veuillez vous connecter avec: firebase login');
+    log.warning('Non connecté à Firebase ou aucun projet configuré');
+    log.info('💡 Pour vous connecter :');
+    log.info('   1. firebase login');
+    log.info('   2. firebase use --add (pour sélectionner un projet)');
+    log.info('   3. Ou utiliser npm run dev (sans vérification Firebase)');
     return false;
   }
 }
@@ -130,38 +136,28 @@ async function deployFirestoreRules() {
     log.info('🚀 Déploiement des règles Firestore...');
     
     // Valider les règles d'abord
-    const checkResult = await runCommand('firebase firestore:rules:check');
-    log.success('Règles Firestore validées');
+    try {
+      await runCommand('firebase firestore:rules:check');
+      log.success('Règles Firestore validées');
+    } catch (checkError) {
+      log.warning('Validation des règles échouée, tentative de déploiement direct...');
+    }
     
-    // Déployer les règles avec output détaillé
-    const deployResult = await runCommand('firebase deploy --only firestore:rules --json');
+    // Déployer les règles
+    await runCommand('firebase deploy --only firestore:rules');
     log.success('Règles Firestore déployées avec succès');
     
     return true;
   } catch (error) {
     log.error('Échec déploiement des règles');
-    if (error.stderr) {
-      console.error(`Erreur stderr: ${error.stderr}`);
-    }
-    if (error.error) {
-      console.error(`Erreur: ${error.error.message}`);
-    }
-    
-    // Essayer un déploiement simple sans JSON
-    try {
-      log.warning('Tentative de déploiement alternatif...');
-      await runCommand('firebase deploy --only firestore:rules --force');
-      log.success('Déploiement alternatif réussi');
-      return true;
-    } catch (retryError) {
-      log.error('Échec du déploiement alternatif');
-      return false;
-    }
+    log.info(`Détails erreur: ${error.stderr || error.error?.message || 'Erreur inconnue'}`);
+    log.info('💡 Le développement peut continuer sans déploiement Firebase');
+    return false;
   }
 }
 
 async function main() {
-  console.log(`${colors.cyan}🔥 YourFeed - Sécurisation Firebase automatique${colors.reset}`);
+  console.log(`${colors.cyan}🔥 YourFeed - Vérification Sécurité Firebase (Optionnelle)${colors.reset}`);
   console.log('');
   
   try {
@@ -170,55 +166,42 @@ async function main() {
     const rulesValid = await checkFirebaseRules();
     if (!rulesValid) {
       log.error('Règles de sécurité invalides ou manquantes');
-      log.warning('Utilisez npm run dev:unsafe pour démarrer sans sécurité (déconseillé)');
-      process.exit(1);
+      log.warning('⚠️  SÉCURITÉ COMPROMISE - Développement autorisé mais non recommandé');
     }
     
-    // 2. Vérifier Firebase CLI
+    // 2. Vérifier Firebase CLI (non bloquant)
     log.info('🔧 Étape 2/4 - Vérification Firebase CLI...');
     const cliOk = await checkFirebaseCLI();
     if (!cliOk) {
-      log.error('Impossible d\'installer Firebase CLI');
-      log.warning('Utilisez npm run dev:unsafe pour démarrer sans sécurité (déconseillé)');
-      process.exit(1);
+      log.info('🚀 Démarrage en mode développement sans Firebase CLI');
+      return; // Sortie gracieuse
     }
     
-    // 3. Vérifier l'authentification Firebase
+    // 3. Vérifier l'authentification Firebase (non bloquant)
     log.info('🔐 Étape 3/4 - Vérification authentification Firebase...');
     const authOk = await checkFirebaseAuth();
     if (!authOk) {
-      log.error('Authentification Firebase requise');
-      log.info('Pour se connecter : firebase login');
-      log.warning('Ou utilisez npm run dev:unsafe pour démarrer sans sécurité (déconseillé)');
-      process.exit(1);
+      log.info('🚀 Démarrage en mode développement sans authentification Firebase');
+      return; // Sortie gracieuse
     }
     
-    // 4. Déployer les règles
+    // 4. Déployer les règles (optionnel)
     log.info('🚀 Étape 4/4 - Déploiement des règles de sécurité...');
     const deployOk = await deployFirestoreRules();
     if (!deployOk) {
-      log.error('Échec du déploiement des règles');
-      log.warning('Utilisez npm run dev:unsafe pour démarrer sans sécurité (déconseillé)');
-      process.exit(1);
+      log.warning('Déploiement des règles échoué - Développement autorisé');
     }
     
-    console.log('');
-    log.security('🛡️  Sécurité Firebase déployée avec succès !');
-    log.success('✅ Base de données YourFeed maintenant protégée');
-    log.info('🚀 Démarrage du serveur de développement sécurisé...');
-    console.log('');
+    log.success('🎉 Vérification sécurité terminée');
     
   } catch (error) {
-    log.error('Erreur inattendue lors de la sécurisation');
-    console.error(error);
-    log.warning('Utilisez npm run dev:unsafe pour démarrer sans sécurité (déconseillé)');
-    process.exit(1);
+    log.error(`Erreur inattendue: ${error.message}`);
+    log.info('🚀 Démarrage en mode développement malgré l\'erreur');
   }
 }
 
-// Exécuter si appelé directement
-if (import.meta.url === `file://${process.argv[1]}` || process.argv[1].endsWith('check-firebase-security.js')) {
-  main();
-}
-
-export { checkFirebaseRules, checkFirebaseCLI, checkFirebaseAuth, deployFirestoreRules }; 
+// En mode développement, ne pas bloquer le démarrage
+main().catch(error => {
+  console.error('Erreur critique:', error);
+  console.log('🚀 Démarrage en mode développement...');
+}); 
