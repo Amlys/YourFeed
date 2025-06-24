@@ -40,7 +40,7 @@ const AuthenticatedLayout: React.FC<{ children: React.ReactNode }> = ({ children
   return (
     <div className="min-h-screen flex flex-col bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       <Header />
-      <main className="flex-1 w-full pt-16 lg:pt-18">
+      <main className="flex-1 w-full pt-14 md:pt-16 lg:pt-18">
         {children}
       </main>
     </div>

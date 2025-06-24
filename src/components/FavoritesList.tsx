@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Trash2, Plus, User, Tag, Settings, Filter, Edit3 } from 'lucide-react';
+import { Trash2, Plus, User, Tag, Settings, Filter, Edit3, ChevronDown } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { useFavorites } from '../contexts/FavoritesContext';
 import { useCategories } from '../contexts/CategoriesContext';
@@ -17,6 +17,7 @@ const FavoritesList: React.FC = () => {
   const [selectedCategoryFilter, setSelectedCategoryFilter] = useState<CategoryId | null>(null);
   const [showCategoryManager, setShowCategoryManager] = useState(false);
   const [editingChannelId, setEditingChannelId] = useState<string | null>(null);
+  const [showMobileFilters, setShowMobileFilters] = useState(false);
 
   // Filtrer les favoris par catégorie si une catégorie est sélectionnée
   const filteredFavorites = selectedCategoryFilter
@@ -74,9 +75,9 @@ const FavoritesList: React.FC = () => {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm">
-      <div className="p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
+      <div className="p-4 md:p-5 lg:p-6 border-b border-gray-200 dark:border-gray-700">
         <div className="flex items-center justify-between mb-4">
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Chaînes Favorites</h2>
+          <h2 className="text-lg md:text-xl font-bold text-gray-900 dark:text-white">Chaînes Favorites</h2>
           <div className="flex items-center space-x-2">
             <button
               onClick={() => setShowCategoryManager(true)}
@@ -91,66 +92,162 @@ const FavoritesList: React.FC = () => {
         {/* Filtre par catégorie */}
         {categories.length > 0 && favorites.length > 0 && (
           <div className="space-y-2">
-            <div className="flex items-center text-sm text-gray-600 dark:text-gray-400">
-              <Filter size={14} className="mr-1" />
-              Filtrer par catégorie
-            </div>
-            <div className="flex flex-wrap gap-2">
+            {/* Mobile Filter Toggle */}
+            <div className="md:hidden">
               <button
-                onClick={() => setSelectedCategoryFilter(null)}
-                className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                  selectedCategoryFilter === null
-                    ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
+                onClick={() => setShowMobileFilters(!showMobileFilters)}
+                className="flex items-center justify-between w-full text-sm text-gray-600 dark:text-gray-400 bg-gray-50 dark:bg-gray-700 rounded-lg px-3 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
               >
-                Toutes ({favorites.length})
+                <div className="flex items-center">
+                  <Filter size={14} className="mr-2" />
+                  {selectedCategoryFilter ? (
+                    <>
+                      {selectedCategoryFilter === 'uncategorized' ? (
+                        <span>Sans catégorie</span>
+                      ) : (
+                        <div className="flex items-center">
+                          <div
+                            className="w-2 h-2 rounded-full mr-2"
+                            style={{ backgroundColor: getCategoryColor(selectedCategoryFilter) }}
+                          />
+                          {getCategoryName(selectedCategoryFilter)}
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <span>Toutes les chaînes</span>
+                  )}
+                </div>
+                <ChevronDown 
+                  size={16} 
+                  className={`transition-transform duration-200 ${showMobileFilters ? 'rotate-180' : ''}`} 
+                />
               </button>
-              {categories.map((category) => {
-                const categoryCount = favorites.filter(fav => fav.categoryId === category.id).length;
-                if (categoryCount === 0) return null;
-                
-                return (
+              
+              {showMobileFilters && (
+                <div className="mt-2 bg-gray-50 dark:bg-gray-700 rounded-lg p-3 space-y-2">
                   <button
-                    key={category.id}
-                    onClick={() => setSelectedCategoryFilter(category.id)}
-                    className={`flex items-center px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                      selectedCategoryFilter === category.id
+                    onClick={() => {
+                      setSelectedCategoryFilter(null);
+                      setShowMobileFilters(false);
+                    }}
+                    className={`w-full text-left px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                      selectedCategoryFilter === null
                         ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
-                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                     }`}
                   >
-                    <div
-                      className="w-2 h-2 rounded-full mr-1.5"
-                      style={{ backgroundColor: category.color }}
-                    />
-                    {category.name} ({categoryCount})
+                    Toutes ({favorites.length})
                   </button>
-                );
-              })}
-              
-              {/* Favoris sans catégorie */}
-              {favorites.filter(fav => !fav.categoryId).length > 0 && (
+                  {categories.map((category) => {
+                    const categoryCount = favorites.filter(fav => fav.categoryId === category.id).length;
+                    if (categoryCount === 0) return null;
+                    
+                    return (
+                      <button
+                        key={category.id}
+                        onClick={() => {
+                          setSelectedCategoryFilter(category.id);
+                          setShowMobileFilters(false);
+                        }}
+                        className={`w-full text-left flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                          selectedCategoryFilter === category.id
+                            ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                        }`}
+                      >
+                        <div
+                          className="w-2 h-2 rounded-full mr-2"
+                          style={{ backgroundColor: category.color }}
+                        />
+                        {category.name} ({categoryCount})
+                      </button>
+                    );
+                  })}
+                  
+                  {favorites.filter(fav => !fav.categoryId).length > 0 && (
+                    <button
+                      onClick={() => {
+                        setSelectedCategoryFilter('uncategorized' as CategoryId);
+                        setShowMobileFilters(false);
+                      }}
+                      className={`w-full text-left flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                        selectedCategoryFilter === 'uncategorized'
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+                          : 'text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      <div className="w-2 h-2 rounded-full mr-2 border border-gray-400" />
+                      Sans catégorie ({favorites.filter(fav => !fav.categoryId).length})
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Desktop Filters */}
+            <div className="hidden md:block">
+              <div className="flex items-center text-sm text-gray-600 dark:text-gray-400 mb-2">
+                <Filter size={14} className="mr-1" />
+                Filtrer par catégorie
+              </div>
+              <div className="flex flex-wrap gap-2">
                 <button
-                  onClick={() => setSelectedCategoryFilter('uncategorized' as CategoryId)}
-                  className={`flex items-center px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
-                    selectedCategoryFilter === 'uncategorized'
+                  onClick={() => setSelectedCategoryFilter(null)}
+                  className={`px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                    selectedCategoryFilter === null
                       ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
                       : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
                   }`}
                 >
-                  <div className="w-2 h-2 rounded-full mr-1.5 border border-gray-400" />
-                  Sans catégorie ({favorites.filter(fav => !fav.categoryId).length})
+                  Toutes ({favorites.length})
                 </button>
-              )}
+                {categories.map((category) => {
+                  const categoryCount = favorites.filter(fav => fav.categoryId === category.id).length;
+                  if (categoryCount === 0) return null;
+                  
+                  return (
+                    <button
+                      key={category.id}
+                      onClick={() => setSelectedCategoryFilter(category.id)}
+                      className={`flex items-center px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                        selectedCategoryFilter === category.id
+                          ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      <div
+                        className="w-2 h-2 rounded-full mr-1.5"
+                        style={{ backgroundColor: category.color }}
+                      />
+                      {category.name} ({categoryCount})
+                    </button>
+                  );
+                })}
+                
+                {/* Favoris sans catégorie */}
+                {favorites.filter(fav => !fav.categoryId).length > 0 && (
+                  <button
+                    onClick={() => setSelectedCategoryFilter('uncategorized' as CategoryId)}
+                    className={`flex items-center px-3 py-1 rounded-lg text-xs font-medium transition-colors ${
+                      selectedCategoryFilter === 'uncategorized'
+                        ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-200'
+                        : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    <div className="w-2 h-2 rounded-full mr-1.5 border border-gray-400" />
+                    Sans catégorie ({favorites.filter(fav => !fav.categoryId).length})
+                  </button>
+                )}
+              </div>
             </div>
           </div>
         )}
       </div>
 
       {!currentUser && (
-        <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-          <p className="text-lg">Connectez-vous pour voir vos chaînes favorites</p>
+        <div className="p-6 md:p-8 text-center text-gray-500 dark:text-gray-400">
+          <p className="text-base md:text-lg">Connectez-vous pour voir vos chaînes favorites</p>
         </div>
       )}
 
@@ -162,7 +259,7 @@ const FavoritesList: React.FC = () => {
             return (
               <li key={channel.id} className="relative">
                 <div 
-                  className={`p-4 lg:p-5 flex items-center space-x-4 cursor-pointer transition-all duration-200 ${
+                  className={`p-3 md:p-4 lg:p-5 flex items-center space-x-3 md:space-x-4 cursor-pointer transition-all duration-200 ${
                     selectedChannel === channel.id 
                       ? 'bg-red-50 dark:bg-red-900/20 border-r-4 border-red-600' 
                       : 'hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -174,21 +271,21 @@ const FavoritesList: React.FC = () => {
                       <img
                         src={channel.thumbnail}
                         alt={channel.title}
-                        className="w-12 h-12 rounded-full object-cover shadow-sm"
+                        className="w-10 h-10 md:w-12 md:h-12 rounded-full object-cover shadow-sm"
                         onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
                       />
                     ) : (
-                      <div className="w-12 h-12 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 shadow-sm">
-                        <User size={24} className="text-gray-400 dark:text-gray-500" />
+                      <div className="w-10 h-10 md:w-12 md:h-12 flex items-center justify-center rounded-full bg-gray-200 dark:bg-gray-700 shadow-sm">
+                        <User size={20} className="md:w-6 md:h-6 text-gray-400 dark:text-gray-500" />
                       </div>
                     )}
                   </div>
                   <div className="flex-1 min-w-0">
-                    <p className="text-base font-medium text-gray-900 dark:text-white truncate">
+                    <p className="text-sm md:text-base font-medium text-gray-900 dark:text-white truncate">
                       {channel.title}
                     </p>
                     <div className="flex items-center space-x-2 mt-1">
-                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                      <p className="text-xs md:text-sm text-gray-500 dark:text-gray-400">
                         Chaîne YouTube
                       </p>
                       {editingChannelId === channel.id ? (
@@ -247,10 +344,10 @@ const FavoritesList: React.FC = () => {
                       e.stopPropagation();
                       removeFavorite(channel.id);
                     }}
-                    className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
+                    className="text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors p-1.5 md:p-2 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/20"
                     aria-label={`Supprimer ${channel.title}`}
                   >
-                    <Trash2 size={18} />
+                    <Trash2 size={16} className="md:w-[18px] md:h-[18px]" />
                   </button>
                 </div>
               </li>
@@ -258,9 +355,9 @@ const FavoritesList: React.FC = () => {
           })}
         </ul>
       ) : currentUser && favorites.length > 0 && filteredFavorites.length === 0 ? (
-        <div className="p-8 lg:p-12 text-center">
-          <Tag size={48} className="mx-auto text-gray-400 dark:text-gray-500 mb-4" />
-          <p className="text-gray-600 dark:text-gray-400 text-lg font-medium mb-3">
+        <div className="p-6 md:p-8 lg:p-12 text-center">
+          <Tag size={40} className="md:w-12 md:h-12 mx-auto text-gray-400 dark:text-gray-500 mb-4" />
+          <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg font-medium mb-3">
             Aucune chaîne dans cette catégorie
           </p>
           <button
@@ -271,11 +368,11 @@ const FavoritesList: React.FC = () => {
           </button>
         </div>
       ) : currentUser ? (
-        <div className="p-8 lg:p-12 text-center">
+        <div className="p-6 md:p-8 lg:p-12 text-center">
           <div className="text-gray-400 dark:text-gray-500 mb-4">
-            <Plus size={48} className="mx-auto" />
+            <Plus size={40} className="md:w-12 md:h-12 mx-auto" />
           </div>
-          <p className="text-gray-600 dark:text-gray-400 text-lg font-medium mb-3">Pas encore de chaînes favorites</p>
+          <p className="text-gray-600 dark:text-gray-400 text-base md:text-lg font-medium mb-3">Pas encore de chaînes favorites</p>
           <p className="text-sm text-gray-500 dark:text-gray-500 leading-relaxed">
             Utilisez la barre de recherche ci-dessus pour trouver et ajouter vos chaînes YouTube préférées
           </p>
